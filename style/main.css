@@ -1,0 +1,83 @@
+*{
+    margin: 0;
+    padding: 0;
+    outline: 0;
+}
+
+body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+header, footer{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+header .inner{
+    width: 1024px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    background: silver;
+}
+header .inner a img{
+    height: 120px;
+    margin-right: 25px;
+}
+
+main{
+    width: 1024px;
+    margin: 15px auto;
+    display: flex;
+    flex-direction: column;
+}
+
+main .repository_list{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+main .repository_list li{
+    list-style: none;
+    margin: 10px;
+    border-bottom: 1px solid gray;
+}
+
+,
+main .repository_list table{
+    width: 100%;
+}
+
+main .repository_list table,
+main .repository_list table tr,
+main .repository_list table tr th,
+main .repository_list table tr td{
+    border-collapse: collapse;
+    border: 1px solid gray;
+}
+
+main .repository_list table tr th{
+    text-align: left;
+    padding: 5px;
+    font-weight: 700;
+}
+
+main .repository_list li a,
+main .repository_list table tr td a{
+    color: black;
+    text-decoration: none;
+    font-weight: 700;
+    transition: .5s;
+}
+
+main .repository_list li a:hover,
+main .repository_list table tr td a:hover{
+    color: gray;
+}
+
+main .repository_list li p{
+    font-size: 13px;
+}
