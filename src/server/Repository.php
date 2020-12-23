@@ -5,7 +5,7 @@ class Repository
 
     public static function start($page)
     {
-		self::$filename = "../content/pagesOnRepository.json";
+		self::$filename = "../../content/pagesOnRepository.json";
          
         echo json_encode(self::readPages($page));
     }
