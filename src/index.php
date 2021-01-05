@@ -10,7 +10,9 @@ if(key_exists('page', $_GET))
 elseif(key_exists('ctrl', $_GET))
 {
 	$controllerName = ucfirst($_GET['ctrl']);
+	$action = (key_exists('act', $_GET) ? $_GET['act'] : 'index');
 	$controller = new $controllerName();
+	$controller->$action();
 }
 else
 	TrabalhosRepositorio::getTrabalhos();

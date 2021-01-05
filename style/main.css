@@ -38,6 +38,19 @@ main .repository_list{
     width: 100%;
     display: flex;
     flex-direction: column;
+    margin-bottom: 25px;;
+}
+
+main .repository_list summary{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+main .repository_list summary small{
+    margin-left: 10px;
+    color: #777;
 }
 
 main .repository_list li{
@@ -46,7 +59,6 @@ main .repository_list li{
     border-bottom: 1px solid gray;
 }
 
-,
 main .repository_list table{
     width: 100%;
 }
@@ -61,8 +73,40 @@ main .repository_list table tr td{
 
 main .repository_list table tr th{
     text-align: left;
-    padding: 5px;
     font-weight: 700;
+}
+
+main .repository_list table tr th,
+main .repository_list table tr td{
+    padding: 10px;
+}
+
+main .repository_list table tr .table_title{
+    width: 50%;
+}
+
+main .repository_list table tr .table_author{
+    width: 35%;
+}
+
+main .repository_list table tr td .button{
+    background: #AAA;
+    color: #333;
+    border-radius: 5px;
+    font-size: 13px;
+    line-height: 15px;
+    padding: 10px;
+    transition: .2s;
+}
+
+main .repository_list table tr td .button:hover{
+    background: #777;
+    color: #EEE;
+}
+
+main .repository_list table tr td span{
+    color: #770;
+    font-size: 13px;
 }
 
 main .repository_list li a,

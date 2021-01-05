@@ -16,13 +16,35 @@ window.addEventListener('load', async ()=>{
 })
 
 async function readTccSite(){
-    await getOnServer.getData('?ctrl=trabalhos')
+    const trbs = await showTrbs('?ctrl=trabalhos')
+    await findLinks()
+}
+
+async function findLinks(){
+    const details = document.querySelectorAll("details")
+
+    details.forEach(detail=>{
+        let summarySmall = detail.querySelector("summary small")
+
+        let tableRows = detail.querySelectorAll('table tr')
+        
+        const total = tableRows.length - 1
+        let count = total
+        tableRows.forEach(async row=>{
+            if(row.querySelector('.empty')){
+                count--
+                await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
+            }
+        })
+
+        summarySmall.innerText = `${count} links num total de ${total} trabalhos` 
+    })
 }
 
 async function readRepositorySite(){
 
-    //await readResponse()
-    await showTrbs()
+    await readResponse()
+    //await showTrbs()
     
 }
 
@@ -41,35 +63,50 @@ async function readResponse(){
     render.endToRead(container)
 }
 
-async function showTrbs(){
+async function showTrbs(url = ''){
     
     try {
-        const trbs = await getOnServer.getData('')
+        const trbs = await getOnServer.getData(url)
 
         if(trbs.fail){
             render.tag(container, 'p', {text: trbs.fail})
-            return
+            return false
         }
-        const trbsOrganized = organizeByYear(trbs)
 
         render.tag(container, 'h3', {
-            text: `Foram localizados ${trbsOrganized.length} trabalhos no repositorio UFSC`
+            text: `Foram localizados ${countTrbs(trbs)} trabalhos registrados no site`
         })
 
-        renderDetails(trbsOrganized)
+        renderDetails(trbs)
+
+        return trbs
+
     } catch (error) {
         console.error(error)
     }
      
 }
 
+function countTrbs(trbs){
+    let count = 0
+
+    for(let semestre in trbs){
+        count += trbs[semestre].length
+    }
+
+    return count
+}
+
 function renderDetails(trbsOrganized){
 
     for(let year in trbsOrganized){
-        const details = render.tag(container, 'details', {class: 'repository_site'})
-        const summary = render.tag(details, 'summary', {
-            text: `${year} (${trbsOrganized[year].length})`
+        const details = render.tag(container, 'details', {
+            class: 'repository_list',
+            id: year,
+            open: 'true'
         })
+        const summary = render.tag(details, 'summary', {text: year})
+        render.tag(summary, 'small', {text: trbsOrganized[year].length})
 
         renderTable(trbsOrganized[year], details)
 
@@ -78,7 +115,7 @@ function renderDetails(trbsOrganized){
 
 function renderTable(trbs, container){
 
-    const titles = ['Título', 'Autor', 'Ano']
+    const titles = ['Título', 'Autor', 'Link']
         
     const table = render.tag(container, 'table')
 
@@ -88,13 +125,23 @@ function renderTable(trbs, container){
     })
 
     trbs.forEach(trb => {
-        let tableRow = render.tag(table, 'tr')
-
-        const tableCellTitle = render.tag(tableRow, 'td')
+        let tableRow = render.tag(table, 'tr', {id: trb.id})
         
-        render.tag(tableCellTitle, 'a', {text: trb.title, href: trb.url, target: '_blank'})
-        render.tag(tableRow, 'td', {text: trb.author})
-        render.tag(tableRow, 'td', {text: trb.year})
+        render.tag(tableRow, 'td', {text: trb.titulo, class: "table_title"})
+        render.tag(tableRow, 'td', {text: trb.autor, class: "table_author"})
+
+        if(trb.repository !== null){
+            const linkColumn = render.tag(tableRow, 'td', {class: "table_repository"})
+            render.tag(linkColumn, 'a', {
+                text: "repositorio",
+                target: "_blank",
+                href: trb.repository,
+                class: "button"
+            })
+        }else{
+            const linkColumn = render.tag(tableRow, 'td', {class: "table_repository empty"})
+            render.tag(linkColumn, 'span', {text: 'Buscando...'})
+        }
     });
 }
 
