@@ -33,7 +33,11 @@ async function findLinks(){
         tableRows.forEach(async row=>{
             if(row.querySelector('.empty')){
                 count--
-                await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
+                const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
+
+                if(search.url){
+                    console.log(search.fail)
+                }
             }
         })
 

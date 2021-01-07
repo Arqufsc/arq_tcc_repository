@@ -7,11 +7,9 @@ class TrabalhosRepositorio
     
     public static function getTrabalhos()
     {
-        self::$filename = "../content/pagesOnRepository.json";
-
 		if(file_exists(self::$filename))
 		{
-			self::$dataStructure = Files::readDataStructure(self::$filename);
+			self::$dataStructure = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
 
 			echo json_encode(self::getDatastructureInfo());
 		}else
@@ -31,7 +29,7 @@ class TrabalhosRepositorio
 
         self::$dataStructure['trabalhos'] = $trabalhos;
 
-        Files::saveDataStructure(self::$filename, self::$dataStructure);
+        Files::saveDataStructure(FILE_TRBS_ON_REPOSITORY, self::$dataStructure);
 
         return $trabalhos;
     }
