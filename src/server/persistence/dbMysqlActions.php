@@ -11,7 +11,9 @@ abstract class dbMysqlActions
 
     public abstract function create(object $model);
 
-    public abstract function read();
+    public abstract function read($where=null);
+
+    public abstract function find($id);
 
     public abstract function update(object $model);
 

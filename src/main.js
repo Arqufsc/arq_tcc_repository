@@ -2,6 +2,8 @@ import getOnServer from "./client/getOnServer.js";
 import render from "./client/render.js"
 
 const container = document.querySelector('main')
+const restartButton = document.querySelector("#readRepository")
+
 const readState = {
     page: 0,
     morePages: true,
@@ -9,27 +11,111 @@ const readState = {
 }
 
 window.addEventListener('load', async ()=>{
-
-    //await readRepositorySite()
+    
     await readTccSite()
-
+    
+    restartButton.addEventListener('click', readRepositorySite)
 })
 
 async function readTccSite(){
-    await getOnServer.getData('?ctrl=trabalhos')
+    const trbs = await showTrbs('?ctrl=trabalhos')
+    await findLinks()
+}
+
+async function findLinks(){
+    const details = document.querySelectorAll("details")
+    const estatistica = {
+        total: 0,
+        fail: 0,
+        fails: [],
+        success: 0
+    }
+
+    details.forEach(detail=>{
+        let summarySmall = detail.querySelector("summary small")
+        let summary = detail.querySelector("summary")
+
+        let tableRows = detail.querySelectorAll('table tr')
+        
+        const total = tableRows.length - 1
+        let count = total
+
+        tableRows.forEach(async row=>{
+            const cellTitle = row.querySelector('.table_title')
+            const cellLink = row.querySelector('.empty')
+
+            if(cellLink){
+                count--
+                const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
+
+                estatistica.total++
+                cellLink.innerHTML = ""
+
+                if(search.trb){
+                    estatistica.success++
+
+                    cellTitle.innerText = search.trb.title
+
+                    render.tag(cellLink, 'a', {
+                        text: 'repositório',
+                        target: '_blank',
+                        href: search.trb.url,
+                        class: 'button'
+                    })
+
+                    cellLink.setAttribute('class', 'table_repository')
+                }
+                if(search.fail){
+                    estatistica.fail++
+                    estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+
+                    render.tag(cellLink, 'span', {
+                        text: "não encontrado!",
+                        class: 'not_found'
+                    })
+                }
+            }
+        })
+
+        summarySmall.innerText = `${count} links num total de ${total} trabalhos` 
+    })
+
+    console.log(estatistica)
 }
 
 async function readRepositorySite(){
+    
+    clearPage()
+    render.tag(container, 'blink', {
+        id: 'loading',
+        text: "Lendo site do repositório institucional..."
+    })
 
-    //await readResponse()
-    await showTrbs()
+    if(readState.morePages)
+        await readResponse()
+    else
+        await getOnServer.getData(``)
+
+    clearPage()
+
+    await readTccSite()
     
 }
+
+function clearPage(){
+    const title = container.querySelector('h2')
+    const navigation = container.querySelector('nav')
+
+    container.innerHTML = ""
+    container.appendChild(title)
+    container.appendChild(navigation)
+}
+
 
 async function readResponse(){    
     while (readState.morePages) {
         try {
-            readState.response = await getOnServer.getData(`?page=${readState.page}`)
+            readState.response = await getOnServer.getData(`?ctrl=repositorio&act=restart&page=${readState.page}`)
             render.readingPage(container, readState.page)
             readState.page++
             readState.morePages = readState.response.morePages
@@ -41,35 +127,50 @@ async function readResponse(){
     render.endToRead(container)
 }
 
-async function showTrbs(){
+async function showTrbs(url = ''){
     
     try {
-        const trbs = await getOnServer.getData('')
+        const trbs = await getOnServer.getData(url)
 
         if(trbs.fail){
             render.tag(container, 'p', {text: trbs.fail})
-            return
+            return false
         }
-        const trbsOrganized = organizeByYear(trbs)
 
         render.tag(container, 'h3', {
-            text: `Foram localizados ${trbsOrganized.length} trabalhos no repositorio UFSC`
+            text: `Foram localizados ${countTrbs(trbs)} trabalhos registrados no site`
         })
 
-        renderDetails(trbsOrganized)
+        renderDetails(trbs)
+
+        return trbs
+
     } catch (error) {
         console.error(error)
     }
      
 }
 
+function countTrbs(trbs){
+    let count = 0
+
+    for(let semestre in trbs){
+        count += trbs[semestre].length
+    }
+
+    return count
+}
+
 function renderDetails(trbsOrganized){
 
     for(let year in trbsOrganized){
-        const details = render.tag(container, 'details', {class: 'repository_site'})
-        const summary = render.tag(details, 'summary', {
-            text: `${year} (${trbsOrganized[year].length})`
+        const details = render.tag(container, 'details', {
+            class: 'repository_list',
+            id: year,
+            open: 'true'
         })
+        const summary = render.tag(details, 'summary', {text: year})
+        render.tag(summary, 'small', {text: trbsOrganized[year].length})
 
         renderTable(trbsOrganized[year], details)
 
@@ -78,7 +179,7 @@ function renderDetails(trbsOrganized){
 
 function renderTable(trbs, container){
 
-    const titles = ['Título', 'Autor', 'Ano']
+    const titles = ['Título', 'Autor', 'Link']
         
     const table = render.tag(container, 'table')
 
@@ -88,39 +189,22 @@ function renderTable(trbs, container){
     })
 
     trbs.forEach(trb => {
-        let tableRow = render.tag(table, 'tr')
-
-        const tableCellTitle = render.tag(tableRow, 'td')
+        let tableRow = render.tag(table, 'tr', {id: trb.id})
         
-        render.tag(tableCellTitle, 'a', {text: trb.title, href: trb.url, target: '_blank'})
-        render.tag(tableRow, 'td', {text: trb.author})
-        render.tag(tableRow, 'td', {text: trb.year})
-    });
-}
+        render.tag(tableRow, 'td', {text: trb.titulo, class: "table_title"})
+        render.tag(tableRow, 'td', {text: trb.autor, class: "table_author"})
 
-function organizeByYear(trbs){
-    const response = {}
-    const years = []
-    let yearList
-
-    trbs.forEach(trb=>{
-        let yearStrict = trb.year.replace('[', '').substr(0, 4)
-        if(years.indexOf(yearStrict) == -1){
-            years.push(yearStrict)
+        if(trb.repository !== null){
+            const linkColumn = render.tag(tableRow, 'td', {class: "table_repository"})
+            render.tag(linkColumn, 'a', {
+                text: "repositório",
+                target: "_blank",
+                href: trb.repository,
+                class: "button"
+            })
+        }else{
+            const linkColumn = render.tag(tableRow, 'td', {class: "table_repository empty"})
+            render.tag(linkColumn, 'span', {text: 'Buscando...'})
         }
-    })
-
-    years.forEach(year=>{
-        yearList = []
-        trbs.forEach(trb=>{
-            let yearStrict = trb.year.substr(0, 4)
-            if(yearStrict == year){
-                yearList.push(trb)
-            }
-        })
-        yearList.sort((a, b)=>a.title-b.title)
-        response[year] = yearList
-    })
-
-    return response
+    });
 }

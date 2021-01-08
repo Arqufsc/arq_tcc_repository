@@ -8,8 +8,10 @@ class dbMysqlActionsTrabalhos extends dbMysqlActions
         
     }
 
-    public function read()
+    public function read($where=null)
     {
+        $where = (!is_null($where) ? " WHERE {$where}" : null);
+        
         $sql = "
             SELECT
                 tcc_trb.id,
@@ -21,33 +23,30 @@ class dbMysqlActionsTrabalhos extends dbMysqlActions
             INNER JOIN tcc_trb_usr ON tcc_trb.id=tcc_trb_usr.trb_id AND tcc_trb_usr.status=2
             INNER JOIN tcc_usr ON tcc_trb_usr.usr_id=tcc_usr.id
             LEFT JOIN tcc_trb_rep ON tcc_trb.id=tcc_trb_rep.trb_id
+            {$where}
             ORDER BY semestre DESC
-
         ";
         $stmt = $this->connection->prepare($sql);
         $stmt->execute();
         
-        $response = array();
-        foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $trb)
-        {
-            $dataStructure = array(
-                'id'=>$trb['id'],
-                'titulo'=>$trb['titulo'],
-                'autor'=>$trb['autor'],
-                'semestre'=>$trb['semestre'],
-                'repository'=>$trb['repository']
-            );
-
-            if($dataStructure['semestre']==$trb['semestre'])
-                $response[$trb['semestre']][] = $dataStructure;
-        }
-
+        $response = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
         return $response;
+    }
+
+    public function find($id)
+    {
+        $response = $this->read("tcc_trb.id={$id}");
+
+        if(count($response) == 1)
+            return $response[0];
     }
 
     public function update(object $model)
     {
-        
+        $sql = "UPDATE tcc_trb SET tcc_trb.titulo='{$model->getTitulo()}' WHERE tcc_trb.id={$model->getId()}";
+        $stmt = $this->connection->prepare($sql);
+        return $stmt->execute();
     }
 
     public function delete(object $model)

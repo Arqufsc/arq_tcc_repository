@@ -10,7 +10,7 @@ const getOnServer = {
             request.onreadystatechange = ()=>{
                 if(request.readyState === 4){
                     if(request.status === 200){
-                        console.log(request.responseText)
+                        //console.log(request.responseText)
                         resolve(JSON.parse(request.responseText))
                     }else{
                         reject(xmlhttp.status)
