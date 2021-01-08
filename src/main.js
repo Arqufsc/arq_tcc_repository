@@ -2,6 +2,8 @@ import getOnServer from "./client/getOnServer.js";
 import render from "./client/render.js"
 
 const container = document.querySelector('main')
+const restartButton = document.querySelector("#readRepository")
+
 const readState = {
     page: 0,
     morePages: true,
@@ -9,10 +11,10 @@ const readState = {
 }
 
 window.addEventListener('load', async ()=>{
-
-    //await readRepositorySite()
+    
     await readTccSite()
-
+    
+    restartButton.addEventListener('click', readRepositorySite)
 })
 
 async function readTccSite(){
@@ -22,40 +24,98 @@ async function readTccSite(){
 
 async function findLinks(){
     const details = document.querySelectorAll("details")
+    const estatistica = {
+        total: 0,
+        fail: 0,
+        fails: [],
+        success: 0
+    }
 
     details.forEach(detail=>{
         let summarySmall = detail.querySelector("summary small")
+        let summary = detail.querySelector("summary")
 
         let tableRows = detail.querySelectorAll('table tr')
         
         const total = tableRows.length - 1
         let count = total
+
         tableRows.forEach(async row=>{
-            if(row.querySelector('.empty')){
+            const cellTitle = row.querySelector('.table_title')
+            const cellLink = row.querySelector('.empty')
+
+            if(cellLink){
                 count--
                 const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
 
-                if(search.url){
-                    console.log(search.fail)
+                estatistica.total++
+                cellLink.innerHTML = ""
+
+                if(search.trb){
+                    estatistica.success++
+
+                    cellTitle.innerText = search.trb.title
+
+                    render.tag(cellLink, 'a', {
+                        text: 'repositório',
+                        target: '_blank',
+                        href: search.trb.url,
+                        class: 'button'
+                    })
+
+                    cellLink.setAttribute('class', 'table_repository')
+                }
+                if(search.fail){
+                    estatistica.fail++
+                    estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+
+                    render.tag(cellLink, 'span', {
+                        text: "não encontrado!",
+                        class: 'not_found'
+                    })
                 }
             }
         })
 
         summarySmall.innerText = `${count} links num total de ${total} trabalhos` 
     })
+
+    console.log(estatistica)
 }
 
 async function readRepositorySite(){
+    
+    clearPage()
+    render.tag(container, 'blink', {
+        id: 'loading',
+        text: "Lendo site do repositório institucional..."
+    })
 
-    await readResponse()
-    //await showTrbs()
+    if(readState.morePages)
+        await readResponse()
+    else
+        await getOnServer.getData(``)
+
+    clearPage()
+
+    await readTccSite()
     
 }
+
+function clearPage(){
+    const title = container.querySelector('h2')
+    const navigation = container.querySelector('nav')
+
+    container.innerHTML = ""
+    container.appendChild(title)
+    container.appendChild(navigation)
+}
+
 
 async function readResponse(){    
     while (readState.morePages) {
         try {
-            readState.response = await getOnServer.getData(`?page=${readState.page}`)
+            readState.response = await getOnServer.getData(`?ctrl=repositorio&act=restart&page=${readState.page}`)
             render.readingPage(container, readState.page)
             readState.page++
             readState.morePages = readState.response.morePages
@@ -137,7 +197,7 @@ function renderTable(trbs, container){
         if(trb.repository !== null){
             const linkColumn = render.tag(tableRow, 'td', {class: "table_repository"})
             render.tag(linkColumn, 'a', {
-                text: "repositorio",
+                text: "repositório",
                 target: "_blank",
                 href: trb.repository,
                 class: "button"
@@ -147,31 +207,4 @@ function renderTable(trbs, container){
             render.tag(linkColumn, 'span', {text: 'Buscando...'})
         }
     });
-}
-
-function organizeByYear(trbs){
-    const response = {}
-    const years = []
-    let yearList
-
-    trbs.forEach(trb=>{
-        let yearStrict = trb.year.replace('[', '').substr(0, 4)
-        if(years.indexOf(yearStrict) == -1){
-            years.push(yearStrict)
-        }
-    })
-
-    years.forEach(year=>{
-        yearList = []
-        trbs.forEach(trb=>{
-            let yearStrict = trb.year.substr(0, 4)
-            if(yearStrict == year){
-                yearList.push(trb)
-            }
-        })
-        yearList.sort((a, b)=>a.title-b.title)
-        response[year] = yearList
-    })
-
-    return response
 }

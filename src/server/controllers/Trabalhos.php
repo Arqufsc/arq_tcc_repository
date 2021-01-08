@@ -4,6 +4,8 @@ class Trabalhos
 {
     private $dbConnection;
     private $dbActions;
+    private $msgFail;
+    private $trbId;
 
     public function __construct()
     {
@@ -14,10 +16,55 @@ class Trabalhos
     
     public function index()
     {
-        $trbList = $this->dbActions->read();
+        $trbList = $this->dbActions->read();        
+        $response = $this->separateBySemester($trbList);
+        $this->printRespononse($response);
+    }
+
+    public function find()
+    {
+        $this->trbId = $this->extractId();
+        if(!$this->trbId)
+            return false;
+
+        $trb = $this->dbActions->find($this->trbId);
+
+        $trbOnRepository = $this->getTrbOnRepository($trb);
+        
+        if($trbOnRepository)
+        {
+            $this->updateTrbTitle($trbOnRepository['title']);
+
+            $this->addRepositoryLink($trbOnRepository['url']);
+
+            $response['trb'] = array(
+                'title'=>$trbOnRepository['title'],
+                'url'=>$trbOnRepository['url']
+            );
+        }
+        else
+        {
+            if(!is_null($this->msgFail))
+                $response = $this->msgFail;
+            else
+            {
+                $fileDateChange = date('d-m-Y H:i:s', filectime(FILE_TRBS_ON_REPOSITORY));
+                $response['fail'] = "Sem um trabalho correspondente no repositorio. Busca realizada em {$fileDateChange}";
+            }
+        }
+        $this->printRespononse($response);
+    }
+
+    private function printRespononse(array $response)
+    {
+        echo json_encode($response, JSON_PRETTY_PRINT);
+    }
+
+    private function separateBySemester(array $trbs)
+    {
         $response = array();
 
-        foreach($trbList as $trb)
+        foreach($trbs as $trb)
         {
             $dataStructure = array(
                 'id'=>$trb['id'],
@@ -31,23 +78,33 @@ class Trabalhos
                 $response[$trb['semestre']][] = $dataStructure;
         }
 
-        $this->printRespononse($response);
+        return $response;
     }
 
-    public function find()
+    private function extractId()
     {
-        if(!key_exists('id', $_GET))
+        if(key_exists('id', $_GET))
         {
-            $this->printRespononse(array(
-                'fail'=>'É necessário definir um id'
-            ));
+            return $_GET['id'];
+        }
+        else
+        {
+            $this->msgFail['fail'] = 'É necessário definir um id';
+            return false;
+        }
+    }
+
+    private function getTrbOnRepository($trb)
+    {
+        $trbOnRepository = false;        
+        $trbsOnRepository = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
+
+        if(empty($trbsOnRepository))
+        {
+            $this->msgFail['fail'] = "Arquivo vazio ou inexistente!";
             return false;
         }
 
-        $trb = $this->dbActions->find($_GET['id']);
-        $link = false;
-        
-        $trbsOnRepository = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
         foreach($trbsOnRepository['trabalhos'] as $trbRepository)
         {
             $autorArray = array();
@@ -59,39 +116,38 @@ class Trabalhos
             {
                 $autor = "{$autorArray[1]} {$autorArray[0]}";
                 if($trb['autor'] == $autor)
-                    $link = $trbRepository;
-            }
-            
+                    $trbOnRepository = $trbRepository;
+            }            
         }
-/*
-        */
-        if($link)
-        {
-            //atualizar título
-            $trbModel = new tcc_trb();
-            $trbModel->setId($_GET['id']);
-            $trbModel->setTitulo($link['title']);
-            $this->dbActions->update($trbModel);
 
-            //cadastrar link
-            $trbRepositoryModel = new tcc_trb_rep();
-            $trbRepositoryModel->setTrb_id($_GET['id']);
-            $trbRepositoryModel->setLink($link['url']);
-            $trbRepositoryActions = new dbMysqlActionsRepository($this->dbConnection);
-            $trbRepositoryActions->create($trbRepositoryModel);
-
-            $response['url'] = $link['url'];
-        }
-        else
-        {
-            $fileDateChange = date('d-m-Y H:i:s', filectime(FILE_TRBS_ON_REPOSITORY));
-            $response['fail'] = "Sem um trabalho correspondente no repositorio. Busca realizada em {$fileDateChange}";
-        }
-        $this->printRespononse($response);
+        return $trbOnRepository;
     }
 
-    private function printRespononse(array $response)
+    private function updateTrbTitle($trbTitle)
     {
-        echo json_encode($response, JSON_PRETTY_PRINT);
+        $trbModel = new tcc_trb();
+        $trbModel->setId($this->trbId);
+        $trbModel->setTitulo($trbTitle);
+        try {
+            $this->dbActions->update($trbModel);
+        } catch (\Throwable $th) {
+            $this->msgFail['fail'] = $th->getMessage(); 
+        }
+        
+    }
+
+    private function addRepositoryLink($url)
+    {
+        $trbRepositoryModel = new tcc_trb_rep();
+        $trbRepositoryModel->setTrb_id($this->trbId);
+        $trbRepositoryModel->setLink($url);
+        
+        $trbRepositoryActions = new dbMysqlActionsRepository($this->dbConnection);
+        try {
+            $trbRepositoryActions->create($trbRepositoryModel);
+        } catch (\Throwable $th) {
+            $this->msgFail['fail'] = $th->getMessage();
+        }
+        
     }
 }

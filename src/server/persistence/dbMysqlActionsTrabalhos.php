@@ -46,7 +46,7 @@ class dbMysqlActionsTrabalhos extends dbMysqlActions
     {
         $sql = "UPDATE tcc_trb SET tcc_trb.titulo='{$model->getTitulo()}' WHERE tcc_trb.id={$model->getId()}";
         $stmt = $this->connection->prepare($sql);
-        $stmt->execute();
+        return $stmt->execute();
     }
 
     public function delete(object $model)
