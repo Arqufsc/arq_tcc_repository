@@ -1,5 +1,6 @@
 <?php
 require_once './server/autoload.php';
+new autoload();
 
 define('REPOSITORY_URL_BASE', 'https://repositorio.ufsc.br/');
 define('REPOSITORY_URL', REPOSITORY_URL_BASE.'handle/123456789/7443/recent-submissions');
@@ -15,5 +16,3 @@ if(key_exists('ctrl', $_GET))
 	$controller = new $controllerName();
 	$controller->$action();
 }
-else
-	TrabalhosRepositorio::getTrabalhos();

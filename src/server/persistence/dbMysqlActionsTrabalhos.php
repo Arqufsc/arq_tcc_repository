@@ -40,6 +40,8 @@ class dbMysqlActionsTrabalhos extends dbMysqlActions
 
         if(count($response) == 1)
             return $response[0];
+        else
+            return false;
     }
 
     public function update(object $model)

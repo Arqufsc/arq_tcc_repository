@@ -3,6 +3,7 @@
 class Repositorio
 {
     private $page;
+    private $dataStructure;
 
     public function index()
     {
@@ -22,9 +23,99 @@ class Repositorio
         $this->page = $_GET['page'];
         
         if($this->page == 0)
-            unlink(FILE_TRBS_ON_REPOSITORY);
+        {
+            if(file_exists(FILE_TRBS_ON_REPOSITORY))
+                unlink(FILE_TRBS_ON_REPOSITORY);
+        }
 
         $this->printRespononse($this->readPages());
+    }
+
+    public function trabalhos()
+    {
+		if(file_exists(FILE_TRBS_ON_REPOSITORY))
+		{
+			$this->dataStructure = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
+
+			$this->printRespononse($this->getDatastructureInfo());
+		}else
+			$this->printRespononse(array('fail'=>'Arquivo não encontrado'));
+		
+    }
+
+    private function getDatastructureInfo()
+    {
+        $trabalhos = array();
+
+        foreach($this->dataStructure['pages'] as $pageContent)
+        {
+            foreach($this->getTrabalhoInfo($pageContent) as $trabalho)
+                $trabalhos[] = $trabalho;
+        }
+
+        $this->dataStructure['trabalhos'] = $trabalhos;
+
+        Files::saveDataStructure(FILE_TRBS_ON_REPOSITORY, $this->dataStructure);
+
+        return $trabalhos;
+    }
+
+    private function getTrabalhoInfo($pageContent)
+    {
+        $res = array();
+
+        $res = $this->getTrabalhoUrlAndTitle($pageContent);
+        $res = $this->getTrabalhoAuthorAndYearAndLocal($pageContent, $res);		
+        
+        return $res;
+    }
+
+    private function getTrabalhoAuthorAndYearAndLocal($pageContent, $res)
+    {
+        $limits = array (
+            'author' => array (
+                    'inicio' => '<span>',
+                    'fim' => '</span>'
+            ),
+            'year' => array (
+                    'inicio' => '<span class="date">',
+                    'fim' => '</span>'
+            ),
+            'local' => array (
+                    'inicio' => '<span class="publisher">',
+                    'fim' => '</span>'
+            )
+    );
+
+        foreach ( explode ( '<!-- External Metadata URL:', $pageContent ) as $i => $item ) :
+            foreach ( $limits as $info => $limit ) :
+                $start = strpos ( $item, $limit ['inicio'] );
+                if ($start) {
+                    $start = $start + strlen ( $limit ['inicio'] );
+                    $end = strpos ( $item, $limit ['fim'], $start );
+                    $res [$i - 1] [$info] = substr ( $item, $start, $end - $start );
+                }
+            endforeach;
+        endforeach;
+
+        return $res;
+    }
+
+    private function getTrabalhoUrlAndTitle($pageContent)
+    {
+        $res = array();
+        $data = array();
+        $urlBase = "\/handle\/123456789\/";
+
+		preg_match_all ( "/(\<a href\=\"{$urlBase})(\d+)(\">)(.+)(\<\/a\>)/", $pageContent, $data );
+
+        foreach ( $data[2] as $i => $d )
+            $res [$i] ['url'] = stripslashes(REPOSITORY_URL_BASE.$urlBase).$d;
+
+        foreach ( $data [4] as $i => $d )
+			$res [$i] ['title'] = $d;
+
+        return $res;
     }
 
     private function readPages()

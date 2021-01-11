@@ -6,12 +6,22 @@ class Trabalhos
     private $dbActions;
     private $msgFail;
     private $trbId;
+    private $trb;
 
     public function __construct()
     {
         $this->dbConnection = new dbMysqlConnection();
         $this->dbConnection = $this->dbConnection->getConnection();
         $this->dbActions = new dbMysqlActionsTrabalhos($this->dbConnection);
+
+        if(key_exists('act', $_GET) AND in_array($_GET['act'], array('find', 'refind')))
+        {
+            $this->trbId = $this->extractId();
+            if(!$this->trbId)
+                return false;
+    
+            $this->trb = $this->dbActions->find($this->trbId);
+        }
     }
     
     public function index()
@@ -21,15 +31,52 @@ class Trabalhos
         $this->printRespononse($response);
     }
 
+    public function refind()
+    {
+        if($this->trb === false)
+        {
+            $this->msgFail['fail'] = "Sem correspondencia do site para o id {$this->trbId}";
+        }
+
+        $nameArray = explode(' ', $this->trb['autor']);
+        $autorFirstNameOnSite = $nameArray[0];
+
+        $trbOnRepository = false;        
+        $trbsOnRepository = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
+
+        if(empty($trbsOnRepository))
+        {
+            $this->msgFail['fail'] = "Arquivo vazio ou inexistente!";
+            return false;
+        }
+
+        if(!key_exists('trabalhos', $trbsOnRepository))
+        {
+            $this->msgFail['error'] = "Não houve a fitragem de dados do repositório!";
+            return false;
+        }
+
+        $response = array();
+
+        foreach($trbsOnRepository['trabalhos'] as $trbRepository)
+        {
+            $autor = $this->getNameFromRepository($trbRepository);
+            
+            if($autor)
+            {
+                $autorArray = explode(' ', $autor);
+                if($autorFirstNameOnSite==$nameArray[0])
+                    $response[] = $trbRepository;
+            }
+        }
+
+        $this->printRespononse($response);
+    }
+
     public function find()
     {
-        $this->trbId = $this->extractId();
-        if(!$this->trbId)
-            return false;
 
-        $trb = $this->dbActions->find($this->trbId);
-
-        $trbOnRepository = $this->getTrbOnRepository($trb);
+        $trbOnRepository = $this->getTrbOnRepository();
         
         if($trbOnRepository)
         {
@@ -52,6 +99,7 @@ class Trabalhos
                 $response['fail'] = "Sem um trabalho correspondente no repositorio. Busca realizada em {$fileDateChange}";
             }
         }
+        
         $this->printRespononse($response);
     }
 
@@ -94,7 +142,7 @@ class Trabalhos
         }
     }
 
-    private function getTrbOnRepository($trb)
+    private function getTrbOnRepository()
     {
         $trbOnRepository = false;        
         $trbsOnRepository = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
@@ -105,22 +153,37 @@ class Trabalhos
             return false;
         }
 
+        if(!key_exists('trabalhos', $trbsOnRepository))
+        {
+            $this->msgFail['error'] = "Não houve a fitragem de dados do repositório!";
+            return false;
+        }
+
         foreach($trbsOnRepository['trabalhos'] as $trbRepository)
         {
-            $autorArray = array();
-
-            if(key_exists('author', $trbRepository))
-                $autorArray = explode(', ', $trbRepository['author']);
-                
-            if(count($autorArray)>1)
+            $autor = $this->getNameFromRepository($trbRepository);
+            
+            if($autor)
             {
-                $autor = "{$autorArray[1]} {$autorArray[0]}";
-                if($trb['autor'] == $autor)
+                if($this->trb['autor'] == $autor)
                     $trbOnRepository = $trbRepository;
             }            
         }
 
         return $trbOnRepository;
+    }
+
+    private function getNameFromRepository($trbRepository)
+    {
+        $autorArray = array();
+
+        if(key_exists('author', $trbRepository))
+            $autorArray = explode(', ', $trbRepository['author']);
+            
+        if(count($autorArray)>1)
+            return "{$autorArray[1]} {$autorArray[0]}";
+        else
+            return false;
     }
 
     private function updateTrbTitle($trbTitle)
