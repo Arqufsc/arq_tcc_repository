@@ -6,12 +6,22 @@ class Trabalhos
     private $dbActions;
     private $msgFail;
     private $trbId;
+    private $trb;
 
     public function __construct()
     {
         $this->dbConnection = new dbMysqlConnection();
         $this->dbConnection = $this->dbConnection->getConnection();
         $this->dbActions = new dbMysqlActionsTrabalhos($this->dbConnection);
+
+        if(key_exists('act', $_GET) AND in_array($_GET['act'], array('find', 'refind')))
+        {
+            $this->trbId = $this->extractId();
+            if(!$this->trbId)
+                return false;
+    
+            $this->trb = $this->dbActions->find($this->trbId);
+        }
     }
     
     public function index()
@@ -23,13 +33,8 @@ class Trabalhos
 
     public function find()
     {
-        $this->trbId = $this->extractId();
-        if(!$this->trbId)
-            return false;
 
-        $trb = $this->dbActions->find($this->trbId);
-
-        $trbOnRepository = $this->getTrbOnRepository($trb);
+        $trbOnRepository = $this->getTrbOnRepository();
         
         if($trbOnRepository)
         {
@@ -52,7 +57,21 @@ class Trabalhos
                 $response['fail'] = "Sem um trabalho correspondente no repositorio. Busca realizada em {$fileDateChange}";
             }
         }
+        
         $this->printRespononse($response);
+    }
+    
+    private function convertNameInArray($name)
+    {
+        $response = array();
+
+        foreach(explode(' ', $name) as $namePart)
+        {
+            if(strlen($namePart)>0)
+                $response[] = $namePart;
+        }
+
+        return $response;
     }
 
     private function printRespononse(array $response)
@@ -94,8 +113,17 @@ class Trabalhos
         }
     }
 
-    private function getTrbOnRepository($trb)
+    private function getTrbOnRepository()
     {
+        if($this->trb === false)
+        {
+            $this->msgFail['fail'] = "Sem correspondencia do site para o id {$this->trbId}";
+        }
+
+        $nameArray = $this->convertNameInArray($this->trb['autor']);
+        $surname = $nameArray[count($nameArray)-1];
+        $firstname = $nameArray[0];
+
         $trbOnRepository = false;        
         $trbsOnRepository = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
 
@@ -105,22 +133,84 @@ class Trabalhos
             return false;
         }
 
-        foreach($trbsOnRepository['trabalhos'] as $trbRepository)
+        if(!key_exists('trabalhos', $trbsOnRepository))
         {
-            $autorArray = array();
-
-            if(key_exists('author', $trbRepository))
-                $autorArray = explode(', ', $trbRepository['author']);
-                
-            if(count($autorArray)>1)
-            {
-                $autor = "{$autorArray[1]} {$autorArray[0]}";
-                if($trb['autor'] == $autor)
-                    $trbOnRepository = $trbRepository;
-            }            
+            $this->msgFail['error'] = "Não houve a fitragem de dados do repositório!";
+            return false;
         }
 
+        $response = array();
+        
+        $firstResponse = $this->firstSearch($trbsOnRepository['trabalhos'], $surname);
+        $response = $this->secondSearch($firstResponse, $firstname);  
+
+        if(empty($response))
+            $this->msgFail['fail'] = "Nenhuma trabalho correspondente...";
+        elseif(count($response['list'])>1)
+            $this->msgFail['multiplos'] = "Foram encontradas múltiplas ocorrências...";
+        else
+            $trbOnRepository = $response['list'][0];
+
         return $trbOnRepository;
+    }
+
+    private function firstSearch(array $trabalhos, $surname)
+    {
+        $response = array();
+
+        foreach($trabalhos as $trbRepository)
+        {
+            $autor = $this->getNameFromRepository($trbRepository);
+            
+            if($autor)
+            {
+                $autorArray = $this->convertNameInArray($autor);
+                
+                if(in_array($surname, $autorArray))
+                {
+                    $response['completeName'] = $this->trb['autor'];
+                    $response['surname'] = $surname;
+                    $response['list'][] = $trbRepository;
+                }
+            }
+        }
+
+        return $response;
+    }
+
+    private function secondSearch(array $firstResponse, $firstname)
+    {
+        $response = array();
+
+        if(key_exists('list', $firstResponse) AND count($firstResponse['list']) > 1)
+        {
+            foreach($firstResponse['list'] as $trbRepository)
+            {
+                $name = $trbRepository['author'];
+                if(in_array($firstname, $this->convertNameInArray($trbRepository['author'])))
+                {
+                    $response['completeName'] = $this->trb['autor'];
+                    $response['firstName'] = $firstname;
+                    $response['list'][] = $trbRepository;
+                }
+            }
+        }else
+            $response = $firstResponse;
+
+        return $response;
+    }
+
+    private function getNameFromRepository($trbRepository)
+    {
+        $autorArray = array();
+
+        if(key_exists('author', $trbRepository))
+            $autorArray = explode(', ', $trbRepository['author']);
+            
+        if(count($autorArray)>1)
+            return "{$autorArray[1]} {$autorArray[0]}";
+        else
+            return false;
     }
 
     private function updateTrbTitle($trbTitle)

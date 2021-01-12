@@ -19,7 +19,11 @@ window.addEventListener('load', async ()=>{
 
 async function readTccSite(){
     const trbs = await showTrbs('?ctrl=trabalhos')
-    await findLinks()
+    const searchDone = await findLinks()
+    /*
+    if(searchDone === false){
+        readRepositorySite()
+    }*/
 }
 
 async function findLinks(){
@@ -48,6 +52,10 @@ async function findLinks(){
                 count--
                 const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
 
+                if(search.error){
+                    return false
+                }
+
                 estatistica.total++
                 cellLink.innerHTML = ""
 
@@ -68,11 +76,24 @@ async function findLinks(){
                 if(search.fail){
                     estatistica.fail++
                     estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+                    console.log(`${row.id}: ${search.fail}`)
 
-                    render.tag(cellLink, 'span', {
+                    const falseButton = render.tag(cellLink, 'button', {
                         text: "não encontrado!",
-                        class: 'not_found'
+                        class: 'not_found',
+                        id: row.id
                     })
+                }
+                if(search.multiplos){
+                    estatistica.fail++
+                    estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+                    
+                    const falseButton = render.tag(cellLink, 'button', {
+                        text: "!!! Múltplos !!!",
+                        class: 'multiplos',
+                        id: row.id
+                    })
+
                 }
             }
         })
@@ -81,6 +102,7 @@ async function findLinks(){
     })
 
     console.log(estatistica)
+    return true
 }
 
 async function readRepositorySite(){
@@ -90,16 +112,19 @@ async function readRepositorySite(){
         id: 'loading',
         text: "Lendo site do repositório institucional..."
     })
+    await readResponse()   
+    
+    if(readState.morePages === false){
+        await getTrabalhosOnRepositoryPagesReaded()
+    }    
+}
 
-    if(readState.morePages)
-        await readResponse()
-    else
-        await getOnServer.getData(``)
+async function getTrabalhosOnRepositoryPagesReaded(){
+    await getOnServer.getData(`?ctrl=repositorio&act=trabalhos`)
 
     clearPage()
 
     await readTccSite()
-    
 }
 
 function clearPage(){

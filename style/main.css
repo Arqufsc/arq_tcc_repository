@@ -149,11 +149,20 @@ main .repository_list table tr td span{
     font-size: 13px;
 }
 
-main .repository_list table tr td span.not_found{
+main .repository_list table tr td .not_found{
     color: #FF0;
     background: #F00;
     border-radius: 5px;
     padding: 10px;
+    cursor: pointer;
+}
+
+main .repository_list table tr td .multiplos{
+    color: #F00;
+    background: #FF0;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
 }
 
 main .repository_list li a,

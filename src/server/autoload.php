@@ -1,13 +1,27 @@
 <?php
 
-foreach(glob("./server/*.php") as $file)
-    require_once $file;
+class autoload
+{
+    public function __construct()
+    {
+        $rootDir = "./server";
+        foreach($this->getFiles($rootDir) as $file)
+            require_once $file;
 
-foreach(glob("./server/controllers/*.php") as $file)
-    require_once $file;
+        foreach($this->getDirs() as $dir)
+        {
+            foreach($this->getFiles($dir) as $file)
+                require_once $file;
+        }
+    }
 
-foreach(glob("./server/models/*.php") as $file)
-    require_once $file;
+    private function getDirs()
+    {
+        return glob("./server/*", GLOB_ONLYDIR);
+    }
 
-foreach(glob("./server/persistence/*.php") as $file)
-    require_once $file;
+    private function getFiles($dir)
+    {
+        return glob("{$dir}/*.php");
+    }
+}
