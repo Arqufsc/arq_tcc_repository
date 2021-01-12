@@ -157,6 +157,14 @@ main .repository_list table tr td .not_found{
     cursor: pointer;
 }
 
+main .repository_list table tr td .multiplos{
+    color: #F00;
+    background: #FF0;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+}
+
 main .repository_list li a,
 main .repository_list table tr td a{
     color: black;

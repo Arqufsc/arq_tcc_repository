@@ -76,17 +76,24 @@ async function findLinks(){
                 if(search.fail){
                     estatistica.fail++
                     estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+                    console.log(`${row.id}: ${search.fail}`)
 
                     const falseButton = render.tag(cellLink, 'button', {
                         text: "não encontrado!",
                         class: 'not_found',
                         id: row.id
                     })
-
-                    falseButton.addEventListener('click', async ()=>{
-                        const response = await getOnServer.getData(`?ctrl=trabalhos&act=refind&id=${falseButton.id}`)
-                        console.log(response)
+                }
+                if(search.multiplos){
+                    estatistica.fail++
+                    estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+                    
+                    const falseButton = render.tag(cellLink, 'button', {
+                        text: "!!! Múltplos !!!",
+                        class: 'multiplos',
+                        id: row.id
                     })
+
                 }
             }
         })
