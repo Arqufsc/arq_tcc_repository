@@ -120,10 +120,6 @@ class Trabalhos
             $this->msgFail['fail'] = "Sem correspondencia do site para o id {$this->trbId}";
         }
 
-        $nameArray = $this->convertNameInArray($this->trb['autor']);
-        $surname = $nameArray[count($nameArray)-1];
-        $firstname = $nameArray[0];
-
         $trbOnRepository = false;        
         $trbsOnRepository = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
 
@@ -139,19 +135,65 @@ class Trabalhos
             return false;
         }
 
-        $response = array();
-        
-        $firstResponse = $this->firstSearch($trbsOnRepository['trabalhos'], $surname);
-        $response = $this->secondSearch($firstResponse, $firstname);  
+        $response = $this->search($trbsOnRepository['trabalhos'], $this->trb['autor']);
+        //var_dump($response);die;
 
         if(empty($response))
             $this->msgFail['fail'] = "Nenhuma trabalho correspondente...";
-        elseif(count($response['list'])>1)
+        elseif(count($response)>1)
+        {
             $this->msgFail['multiplos'] = "Foram encontradas múltiplas ocorrências...";
+            $this->msgFail['result'] = $response;
+        }
         else
-            $trbOnRepository = $response['list'][0];
+            {
+                $keys = array_keys($response);
+                $trbOnRepository = $response[$keys[0]];
+            }
 
         return $trbOnRepository;
+    }
+
+    private function search(array $trabalhos, $nameComplete)
+    {
+        $nameParts = $this->convertNameInArray($nameComplete);
+        $stages = array(
+            $nameParts[count($nameParts)-1],
+            $nameParts[0],
+            $nameParts[1]
+        );
+        
+        $continue = true;
+
+        while($continue)
+        {
+            foreach($stages as $stage)
+            {
+                foreach($trabalhos as $key=>$trabalho)
+                {
+                    $autor = $this->getNameFromRepository($trabalho);
+                    $autorArray = $this->convertNameInArray($autor);
+
+                    if(!in_array($stage, $autorArray))
+                        unset($trabalhos[$key]);
+                }
+
+                if(count($trabalhos)<=1)
+                    $continue = false;
+            }
+
+            foreach($trabalhos as $key=>$trabalho)
+            {
+                $autor = $this->getNameFromRepository($trabalho);
+                $autorArray = $this->convertNameInArray($autor);
+                if(count($nameParts) != count($autorArray))
+                    unset($trabalhos[$key]);
+            }
+
+            $continue = false;
+        }
+
+        return $trabalhos;
     }
 
     private function firstSearch(array $trabalhos, $surname)
