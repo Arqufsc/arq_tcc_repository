@@ -1,5 +1,6 @@
 import getOnServer from "./client/getOnServer.js";
-import render from "./client/render.js"
+import render from "./client/render.js";
+import findLinks from "./client/findLinks.js";
 
 const container = document.querySelector('main')
 const restartButton = document.querySelector("#readRepository")
@@ -18,19 +19,16 @@ window.addEventListener('load', async ()=>{
 })
 
 async function readTccSite(){
-    const trbs = await showTrbs('?ctrl=trabalhos')
-    const searchDone = await findLinks()
-    /*
-    if(searchDone === false){
-        readRepositorySite()
-    }*/
+    await showTrbs('?ctrl=trabalhos')
+    await findLinks()
 }
 
-async function findLinks(){
+/*async function findLinks(){
     const details = document.querySelectorAll("details")
     const estatistica = {
         total: 0,
         fail: 0,
+        multiplos: [],
         fails: [],
         success: 0
     }
@@ -76,7 +74,6 @@ async function findLinks(){
                 if(search.fail){
                     estatistica.fail++
                     estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
-                    console.log(`${row.id}: ${search.fail}`)
 
                     const falseButton = render.tag(cellLink, 'button', {
                         text: "não encontrado!",
@@ -85,8 +82,8 @@ async function findLinks(){
                     })
                 }
                 if(search.multiplos){
-                    estatistica.fail++
-                    estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+                    estatistica.multiplos.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
+                    console.log(search.result)
                     
                     const falseButton = render.tag(cellLink, 'button', {
                         text: "!!! Múltplos !!!",
@@ -104,7 +101,7 @@ async function findLinks(){
     console.log(estatistica)
     return true
 }
-
+*/
 async function readRepositorySite(){
     
     clearPage()
@@ -135,8 +132,6 @@ function clearPage(){
     container.appendChild(title)
     container.appendChild(navigation)
 }
-
-
 async function readResponse(){    
     while (readState.morePages) {
         try {
