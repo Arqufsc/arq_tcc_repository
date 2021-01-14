@@ -134,9 +134,8 @@ class Trabalhos
             $this->msgFail['error'] = "Não houve a fitragem de dados do repositório!";
             return false;
         }
-
+        
         $response = $this->search($trbsOnRepository['trabalhos'], $this->trb['autor']);
-        //var_dump($response);die;
 
         if(empty($response))
             $this->msgFail['fail'] = "Nenhuma trabalho correspondente...";
@@ -154,9 +153,10 @@ class Trabalhos
         return $trbOnRepository;
     }
 
-    private function search(array $trabalhos, $nameComplete)
+    private function search(array $trabalhosBySemestre, $nameComplete)
     {
         $nameParts = $this->convertNameInArray($nameComplete);
+        
         $stages = array(
             $nameParts[count($nameParts)-1],
             $nameParts[0],
@@ -164,88 +164,42 @@ class Trabalhos
         );
         
         $continue = true;
-
+        
         while($continue)
         {
             foreach($stages as $stage)
             {
-                foreach($trabalhos as $key=>$trabalho)
+                foreach($trabalhosBySemestre as $key=>$trabalho)
                 {
                     $autor = $this->getNameFromRepository($trabalho);
                     $autorArray = $this->convertNameInArray($autor);
 
                     if(!in_array($stage, $autorArray))
-                        unset($trabalhos[$key]);
+                        unset($trabalhosBySemestre[$key]);
                 }
 
-                if(count($trabalhos)<=1)
+                if(count($trabalhosBySemestre)<=1)
                     $continue = false;
             }
 
-            foreach($trabalhos as $key=>$trabalho)
+            foreach($trabalhosBySemestre as $key=>$trabalho)
             {
                 $autor = $this->getNameFromRepository($trabalho);
                 $autorArray = $this->convertNameInArray($autor);
                 if(count($nameParts) != count($autorArray))
-                    unset($trabalhos[$key]);
+                    unset($trabalhosBySemestre[$key]);
             }
 
             $continue = false;
         }
 
-        return $trabalhos;
-    }
-
-    private function firstSearch(array $trabalhos, $surname)
-    {
-        $response = array();
-
-        foreach($trabalhos as $trbRepository)
-        {
-            $autor = $this->getNameFromRepository($trbRepository);
-            
-            if($autor)
-            {
-                $autorArray = $this->convertNameInArray($autor);
-                
-                if(in_array($surname, $autorArray))
-                {
-                    $response['completeName'] = $this->trb['autor'];
-                    $response['surname'] = $surname;
-                    $response['list'][] = $trbRepository;
-                }
-            }
-        }
-
-        return $response;
-    }
-
-    private function secondSearch(array $firstResponse, $firstname)
-    {
-        $response = array();
-
-        if(key_exists('list', $firstResponse) AND count($firstResponse['list']) > 1)
-        {
-            foreach($firstResponse['list'] as $trbRepository)
-            {
-                $name = $trbRepository['author'];
-                if(in_array($firstname, $this->convertNameInArray($trbRepository['author'])))
-                {
-                    $response['completeName'] = $this->trb['autor'];
-                    $response['firstName'] = $firstname;
-                    $response['list'][] = $trbRepository;
-                }
-            }
-        }else
-            $response = $firstResponse;
-
-        return $response;
+        return $trabalhosBySemestre;
     }
 
     private function getNameFromRepository($trbRepository)
     {
         $autorArray = array();
-
+        
         if(key_exists('author', $trbRepository))
             $autorArray = explode(', ', $trbRepository['author']);
             

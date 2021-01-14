@@ -5,13 +5,13 @@ function changeTableTitle(detail, total){
     const summarySmall = detail.querySelector("summary small")
     const tableRows = detail.querySelectorAll('table tr')
 
-    let count
+    let count = total
 
     tableRows.forEach(row=>{
         const cellLink = row.querySelector('.empty')
 
         if(cellLink){
-            count --
+            count--
         }
     })
 
@@ -19,15 +19,36 @@ function changeTableTitle(detail, total){
     summarySmall.innerText = text
 }
 
-function setStatistic(){
+function setStatistic(total, searches){
 
+    const estatistica = {
+        total: total,
+        fail: 0,
+        multiplos: [],
+        fails: [],
+        success: total
+    }
+    console.log(searches)
+    searches.forEach(search=>{
+        if(search.fail){
+            estatistica.fail++
+            estatistica.success--
+            fails.push(search.fail)
+        }
+
+        if(search.multiplos){
+            estatistica.fail++
+            estatistica.success--
+            estatistica.multiplos.push(search.searchResult)
+        }
+    })
+
+    console.log(estatistica)
 }
 
-async function searchLinks(row){
+async function searchLinks(row, cellLink){
     const cellTitle = row.querySelector('.table_title')
-    const cellLink = row.querySelector('.empty')
-
-    console.log(`?ctrl=trabalhos&act=find&id=${row.id}`)
+    
     const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
 
     if(search.error){
@@ -48,32 +69,49 @@ async function searchLinks(row){
         cellLink.setAttribute('class', 'table_repository')
     }
 
+    if(search.fail){
+        render.tag(cellLink, 'span', {
+            text: "Nenhum link",
+            class: "not_found"
+        })
+    }
+
+    if(search.multiplos){
+        render.tag(cellLink, 'span', {
+            text: "Múltiplos links",
+            class: "multiplos"
+        })
+    }
+
+    return search
+
 }
 
 async function findLinks(){
-    const container = document.querySelector('main')
     const details = document.querySelectorAll("details")
-
-    const estatistica = {
-        total: 0,
-        fail: 0,
-        multiplos: [],
-        fails: [],
-        success: 0
-    }
+    const searches = []
+    let total = 0
 
     details.forEach(async detail=>{
         const tableRows = detail.querySelectorAll("table tr")
-        const total = tableRows.length - 1
+        const count = tableRows.length - 1
+
+        total = total + count
     
-        changeTableTitle(detail, total)
+        changeTableTitle(detail, count)
     
-        tableRows.forEach(async row=>{
-            
-             await searchLinks(row)
-            //setStatistic()
+        tableRows.forEach(async row=>{            
+            const cellLink = row.querySelector('.empty')
+
+            if(cellLink){
+                const searchResult = await searchLinks(row, cellLink)
+                searches.push(searchResult)
+            }
+
         })
     })
+    
+    setStatistic(total, searches)
 }
 
 export default findLinks
