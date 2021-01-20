@@ -2,7 +2,7 @@
 
 class dbMysqlActionsRepository extends dbMysqlActions
 {
-    public function create(object $model)
+    public function create($model)
     {
         $sql = "INSERT INTO tcc_trb_rep(trb_id, link) VALUES({$model->getTrb_id()}, '{$model->getLink()}')";
         $stmt = $this->connection->prepare($sql);
@@ -19,12 +19,12 @@ class dbMysqlActionsRepository extends dbMysqlActions
 
     }
 
-    public function update(object $model)
+    public function update($model)
     {
         
     }
 
-    public function delete(object $model)
+    public function delete($model)
     {
         
     }

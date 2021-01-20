@@ -11,8 +11,7 @@ class Repositorio
             $this->page = $_GET['page'];
         else
         {
-            $this->printRespononse(array('fail'=>"É necessário definir uma página"));
-            return false;
+            return array('fail'=>"É necessário definir uma página");
         }
 
         $this->readPages();
@@ -28,7 +27,7 @@ class Repositorio
                 unlink(FILE_TRBS_ON_REPOSITORY);
         }
 
-        $this->printRespononse($this->readPages());
+        return $this->readPages();
     }
 
     public function trabalhos()
@@ -36,10 +35,9 @@ class Repositorio
 		if(file_exists(FILE_TRBS_ON_REPOSITORY))
 		{
 			$this->dataStructure = Files::readDataStructure(FILE_TRBS_ON_REPOSITORY);
-
-			$this->printRespononse($this->getDatastructureInfo());
+			return $this->getDatastructureInfo();
 		}else
-			$this->printRespononse(array('fail'=>'Arquivo não encontrado'));
+			return array('fail'=>'Arquivo não encontrado');
 		
     }
 
@@ -166,10 +164,5 @@ class Repositorio
 		curl_close($ch);
 		
 		return $content;
-	}	
-
-    private function printRespononse(array $response)
-    {
-        echo json_encode($response, JSON_PRETTY_PRINT);
-    }
+	}
 }

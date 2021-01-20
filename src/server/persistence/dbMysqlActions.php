@@ -9,13 +9,13 @@ abstract class dbMysqlActions
         $this->connection = $connection;
     }
 
-    public abstract function create(object $model);
+    public abstract function create($model);
 
     public abstract function read($where=null);
 
     public abstract function find($id);
 
-    public abstract function update(object $model);
+    public abstract function update($model);
 
-    public abstract function delete(object $model);
+    public abstract function delete($model);
 }

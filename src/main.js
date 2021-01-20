@@ -1,127 +1,51 @@
-import getOnServer from "./client/getOnServer.js";
 import render from "./client/render.js";
+import readTrabalhos from "./client/listTrabalhos.js";
 import findLinks from "./client/findLinks.js";
 
 const container = document.querySelector('main')
 const restartButton = document.querySelector("#readRepository")
 
-const readState = {
+const initialState = {
     page: 0,
-    morePages: true,
-    response: []
+    morePages: true
 }
 
 window.addEventListener('load', async ()=>{
     
-    await readTccSite()
-    
+    await renderTrabalhosList()
+
     restartButton.addEventListener('click', readRepositorySite)
 })
 
-async function readTccSite(){
-    await showTrbs('?ctrl=trabalhos')
+async function renderTrabalhosList()
+{
+    const trabalhos = await readTrabalhos.listTrabalhos()
+
+    if(trabalhos.fail){
+        render.tag(container, 'p', {text: trabalhos.fail})
+    }else{
+        render.tag(container, 'h3', {
+            text: `Foram localizados ${readTrabalhos.countTrabalhos(trabalhos)} trabalhos registrados no site`
+        })
+        
+        renderDetails(trabalhos)
+    }
+
     await findLinks()
 }
 
-/*async function findLinks(){
-    const details = document.querySelectorAll("details")
-    const estatistica = {
-        total: 0,
-        fail: 0,
-        multiplos: [],
-        fails: [],
-        success: 0
-    }
-
-    details.forEach(detail=>{
-        let summarySmall = detail.querySelector("summary small")
-        let summary = detail.querySelector("summary")
-
-        let tableRows = detail.querySelectorAll('table tr')
-        
-        const total = tableRows.length - 1
-        let count = total
-
-        tableRows.forEach(async row=>{
-            const cellTitle = row.querySelector('.table_title')
-            const cellLink = row.querySelector('.empty')
-
-            if(cellLink){
-                count--
-                const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
-
-                if(search.error){
-                    return false
-                }
-
-                estatistica.total++
-                cellLink.innerHTML = ""
-
-                if(search.trb){
-                    estatistica.success++
-
-                    cellTitle.innerText = search.trb.title
-
-                    render.tag(cellLink, 'a', {
-                        text: 'repositório',
-                        target: '_blank',
-                        href: search.trb.url,
-                        class: 'button'
-                    })
-
-                    cellLink.setAttribute('class', 'table_repository')
-                }
-                if(search.fail){
-                    estatistica.fail++
-                    estatistica.fails.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
-
-                    const falseButton = render.tag(cellLink, 'button', {
-                        text: "não encontrado!",
-                        class: 'not_found',
-                        id: row.id
-                    })
-                }
-                if(search.multiplos){
-                    estatistica.multiplos.push(`${summary.innerText.substr(0, 6)} - ${row.id}`)
-                    console.log(search.result)
-                    
-                    const falseButton = render.tag(cellLink, 'button', {
-                        text: "!!! Múltplos !!!",
-                        class: 'multiplos',
-                        id: row.id
-                    })
-
-                }
-            }
-        })
-
-        summarySmall.innerText = `${count} links num total de ${total} trabalhos` 
-    })
-
-    console.log(estatistica)
-    return true
-}
-*/
 async function readRepositorySite(){
     
     clearPage()
-    render.tag(container, 'blink', {
-        id: 'loading',
+
+    const loadinMsg = render.tag(container, 'p', {
+        class: 'loading',
         text: "Lendo site do repositório institucional..."
     })
-    await readResponse()   
-    
-    if(readState.morePages === false){
-        await getTrabalhosOnRepositoryPagesReaded()
-    }    
-}
 
-async function getTrabalhosOnRepositoryPagesReaded(){
-    await getOnServer.getData(`?ctrl=repositorio&act=trabalhos`)
-
+    await readTrabalhos.readRepositoryPage(initialState, loadinMsg)  
     clearPage()
-
-    await readTccSite()
+    await renderTrabalhosList()
 }
 
 function clearPage(){
@@ -132,22 +56,10 @@ function clearPage(){
     container.appendChild(title)
     container.appendChild(navigation)
 }
-async function readResponse(){    
-    while (readState.morePages) {
-        try {
-            readState.response = await getOnServer.getData(`?ctrl=repositorio&act=restart&page=${readState.page}`)
-            render.readingPage(container, readState.page)
-            readState.page++
-            readState.morePages = readState.response.morePages
-        } catch (error) {
-            console.error(error)
-        }
-    } ;
-    
-    render.endToRead(container)
-}
 
-async function showTrbs(url = ''){
+
+
+/*async function showTrbs(url = ''){
     
     try {
         const trbs = await getOnServer.getData(url)
@@ -179,7 +91,7 @@ function countTrbs(trbs){
     }
 
     return count
-}
+}*/
 
 function renderDetails(trbsOrganized){
 
