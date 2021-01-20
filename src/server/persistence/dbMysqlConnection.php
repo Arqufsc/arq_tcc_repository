@@ -32,7 +32,10 @@ class dbMysqlConnection
     private function setConnection()
     {
         $dsn = "mysql:dbname={$this->db_name};host={$this->db_host}";
-        $this->connection = new PDO($dsn, $this->db_user, $this->db_pswd);
+        $options = array(
+            PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
+        );
+        $this->connection = new PDO($dsn, $this->db_user, $this->db_pswd, $options);
         $this->connection->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_EXCEPTION);
     }
 

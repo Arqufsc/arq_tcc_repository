@@ -8,6 +8,9 @@ const getOnServer = {
             request.open(method, `./src/index.php${query}`, true)
             request.send()
             request.onreadystatechange = ()=>{
+
+                //console.log(request.readyState)
+
                 if(request.readyState === 4){
                     if(request.status === 200){
                         //console.log(request.responseText)

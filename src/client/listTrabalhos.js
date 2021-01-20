@@ -1,10 +1,10 @@
 import getOnServer from "./getOnServer.js";
 
 const readTrabalhos = {
-    listTrabalhos: async url=>{
+    listTrabalhos: async ()=>{
         
         try {
-            return await getOnServer.getData(url)
+            return await getOnServer.getData('?ctrl=trabalhos')
 
         } catch (error) {
             console.error(error)
@@ -21,16 +21,30 @@ const readTrabalhos = {
         return count
     },
 
-    readRepositoryPage: async readState=>{
+    readRepositoryPage: async (readState, loandingMsg)=>{
         try{
-            await getOnServer.getData(`?ctrl=repositorio&act=restart&page=${readState.page}`)
-            readState.page++
-            readState.morePages = readState.response.morePages
+            while(readState.morePages){
+                let response = await getOnServer.getData(`?ctrl=repositorio&act=restart&page=${readState.page}`)
 
-            return readState
+                readState.page++
+                readState.morePages = response.morePages
+                loandingMsg.innerText = `Lendo página ${readState.page}...`
+            }
+            
+
         } catch (error) {
             console.error(error)
         }
+
+        try {
+            const cleanTrabalhosList = await getOnServer.getData("?ctrl=repositorio&act=trabalhos")
+            loandingMsg.innerText = `Filtrando dados...`
+
+        } catch (error) {
+            console.error(error)
+        }
+
+        return true
     }
 }
 

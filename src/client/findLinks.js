@@ -28,7 +28,7 @@ function setStatistic(total, searches){
         fails: [],
         success: total
     }
-    console.log(searches)
+    
     searches.forEach(search=>{
         if(search.fail){
             estatistica.fail++
@@ -49,41 +49,49 @@ function setStatistic(total, searches){
 async function searchLinks(row, cellLink){
     const cellTitle = row.querySelector('.table_title')
     
-    const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
+    try {
+        const search = await getOnServer.getData(`?ctrl=trabalhos&act=find&id=${row.id}`)
 
-    if(search.error){
-        return false
-    }
-    cellLink.innerHTML = ""
+        if(search.error){
+            throw search.error
+        }
+        cellLink.innerHTML = ""
+        
+        if(search.trb){
+            cellTitle.innerText = search.trb.title
     
-    if(search.trb){
-        cellTitle.innerText = search.trb.title
+            render.tag(cellLink, 'a', {
+                text: 'repositório',
+                target: '_blank',
+                href: search.trb.url,
+                class: 'button'
+            })
+    
+            cellLink.setAttribute('class', 'table_repository')
+        }
+    
+        if(search.fail){
+            render.tag(cellLink, 'span', {
+                text: "Nenhum link",
+                class: "not_found"
+            })
+        }
+    
+        if(search.multiplos){
+            render.tag(cellLink, 'span', {
+                text: "Múltiplos links",
+                class: "multiplos"
+            })
+        }
+    
+        return search
 
-        render.tag(cellLink, 'a', {
-            text: 'repositório',
-            target: '_blank',
-            href: search.trb.url,
-            class: 'button'
-        })
-
-        cellLink.setAttribute('class', 'table_repository')
+    } catch (error) {
+        throw error
     }
+    
 
-    if(search.fail){
-        render.tag(cellLink, 'span', {
-            text: "Nenhum link",
-            class: "not_found"
-        })
-    }
-
-    if(search.multiplos){
-        render.tag(cellLink, 'span', {
-            text: "Múltiplos links",
-            class: "multiplos"
-        })
-    }
-
-    return search
+    
 
 }
 
@@ -104,13 +112,18 @@ async function findLinks(){
             const cellLink = row.querySelector('.empty')
 
             if(cellLink){
-                const searchResult = await searchLinks(row, cellLink)
-                searches.push(searchResult)
+                try {
+                    const searchResult = await searchLinks(row, cellLink)
+                    searches.push(searchResult)
+                } catch (error) {
+                    console.error(error)
+                }
+                
             }
 
         })
     })
-    
+    console.log(searches)
     setStatistic(total, searches)
 }
 

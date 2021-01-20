@@ -5,15 +5,22 @@ import findLinks from "./client/findLinks.js";
 const container = document.querySelector('main')
 const restartButton = document.querySelector("#readRepository")
 
-const readState = {
+const initialState = {
     page: 0,
-    morePages: true,
-    response: []
+    morePages: true
 }
 
 window.addEventListener('load', async ()=>{
     
-    const trabalhos = await readTrabalhos.listTrabalhos('?ctrl=trabalhos')
+    await renderTrabalhosList()
+
+    restartButton.addEventListener('click', readRepositorySite)
+})
+
+async function renderTrabalhosList()
+{
+    const trabalhos = await readTrabalhos.listTrabalhos()
+
     if(trabalhos.fail){
         render.tag(container, 'p', {text: trabalhos.fail})
     }else{
@@ -25,23 +32,20 @@ window.addEventListener('load', async ()=>{
     }
 
     await findLinks()
-
-    restartButton.addEventListener('click', readRepositorySite)
-})
+}
 
 async function readRepositorySite(){
     
     clearPage()
 
-    render.tag(container, 'blink', {
-        id: 'loading',
+    const loadinMsg = render.tag(container, 'p', {
+        class: 'loading',
         text: "Lendo site do repositório institucional..."
     })
-    await readTrabalhos.readRepositoryPage(readState)   
-    
-    if(readState.morePages === false){
-        await getTrabalhosOnRepositoryPagesReaded()
-    }    
+
+    await readTrabalhos.readRepositoryPage(initialState, loadinMsg)  
+    clearPage()
+    await renderTrabalhosList()
 }
 
 function clearPage(){

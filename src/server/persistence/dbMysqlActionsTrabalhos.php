@@ -3,7 +3,7 @@
 class dbMysqlActionsTrabalhos extends dbMysqlActions
 {
 
-    public function create(object $model)
+    public function create($model)
     {
         
     }
@@ -44,14 +44,14 @@ class dbMysqlActionsTrabalhos extends dbMysqlActions
             return false;
     }
 
-    public function update(object $model)
+    public function update($model)
     {
         $sql = "UPDATE tcc_trb SET tcc_trb.titulo='{$model->getTitulo()}' WHERE tcc_trb.id={$model->getId()}";
         $stmt = $this->connection->prepare($sql);
         return $stmt->execute();
     }
 
-    public function delete(object $model)
+    public function delete($model)
     {
         
     }

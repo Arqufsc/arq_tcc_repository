@@ -10,6 +10,7 @@ class Trabalhos
 
     public function __construct()
     {
+
         $this->dbConnection = new dbMysqlConnection();
         $this->dbConnection = $this->dbConnection->getConnection();
         $this->dbActions = new dbMysqlActionsTrabalhos($this->dbConnection);
@@ -26,9 +27,10 @@ class Trabalhos
     
     public function index()
     {
-        $trbList = $this->dbActions->read();        
+        $trbList = $this->dbActions->read();  
         $response = $this->separateBySemester($trbList);
-        $this->printRespononse($response);
+        
+        return $response;
     }
 
     public function find()
@@ -58,7 +60,7 @@ class Trabalhos
             }
         }
         
-        $this->printRespononse($response);
+        return $response;
     }
     
     private function convertNameInArray($name)
@@ -72,11 +74,6 @@ class Trabalhos
         }
 
         return $response;
-    }
-
-    private function printRespononse(array $response)
-    {
-        echo json_encode($response, JSON_PRETTY_PRINT);
     }
 
     private function separateBySemester(array $trbs)
@@ -115,6 +112,8 @@ class Trabalhos
 
     private function getTrbOnRepository()
     {
+        $response = array();
+
         if($this->trb === false)
         {
             $this->msgFail['fail'] = "Sem correspondencia do site para o id {$this->trbId}";
@@ -134,8 +133,9 @@ class Trabalhos
             $this->msgFail['error'] = "Não houve a fitragem de dados do repositório!";
             return false;
         }
-        
-        $response = $this->search($trbsOnRepository['trabalhos'], $this->trb['autor']);
+
+        if($this->trb)
+            $response = $this->search($trbsOnRepository['trabalhos'], $this->trb['autor']);
 
         if(empty($response))
             $this->msgFail['fail'] = "Nenhuma trabalho correspondente...";
@@ -224,12 +224,12 @@ class Trabalhos
 
     private function addRepositoryLink($url)
     {
-        $trbRepositoryModel = new tcc_trb_rep();
-        $trbRepositoryModel->setTrb_id($this->trbId);
-        $trbRepositoryModel->setLink($url);
-        
-        $trbRepositoryActions = new dbMysqlActionsRepository($this->dbConnection);
         try {
+            $trbRepositoryModel = new tcc_trb_rep();
+            $trbRepositoryModel->setTrb_id($this->trbId);
+            $trbRepositoryModel->setLink($url);
+            
+            $trbRepositoryActions = new dbMysqlActionsRepository($this->dbConnection);
             $trbRepositoryActions->create($trbRepositoryModel);
         } catch (\Throwable $th) {
             $this->msgFail['fail'] = $th->getMessage();
